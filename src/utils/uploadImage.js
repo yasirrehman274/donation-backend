@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const env = require('../config/env');
 const { cloudinary, configured } = require('../config/cloudinary');
 const { ApiError } = require('./index');
 
@@ -23,6 +24,16 @@ const uploadImage = async (file, { baseUrl = '' } = {}) => {
   if (!file || !file.path) throw new ApiError(400, 'No file uploaded');
 
   if (!configured) {
+    // Serverless deployments (e.g. Vercel) have no persistent local filesystem,
+    // so a local /uploads URL would silently 404 later. Fail loudly in
+    // production instead of losing data.
+    if (env.nodeEnv === 'production') {
+      throw new ApiError(
+        500,
+        'Image upload is unavailable: Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET.'
+      );
+    }
+
     return {
       url: `${baseUrl}/uploads/${file.filename}`,
       filename: file.filename,
