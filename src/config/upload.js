@@ -1,11 +1,22 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const env = require('./env');
 
 const { MulterError } = multer;
 
-const uploadDir = path.join(__dirname, '..', 'uploads');
+// In serverless / production deployments the project directory may be read-only
+// and local storage is ephemeral anyway, so multer writes temporary files to
+// the OS temp dir (writable on Vercel via /tmp). The uploaded file is then
+// pushed to Cloudinary and the temp copy deleted (see utils/uploadImage.js).
+// Local development keeps the src/uploads fallback so files can be served from
+// /uploads without a Cloudinary account.
+const uploadDir =
+  process.env.VERCEL === '1' || env.nodeEnv === 'production'
+    ? os.tmpdir()
+    : path.join(__dirname, '..', 'uploads');
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

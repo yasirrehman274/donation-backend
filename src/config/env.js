@@ -10,13 +10,20 @@ const parseBool = (value, fallback = false) => {
 const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 5000,
-  mongodbUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/donation_system',
+  // MONGODB_URI is the project's canonical name; MONGO_URI is accepted as an
+  // alias (used in many serverless/Vercel guides).
+  mongodbUri: process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/donation_system',
   jwtSecret: process.env.JWT_SECRET || 'donation-system-dev-secret-change-in-production',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:3000')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean),
+  // CORS_ORIGIN supports a comma-separated list; FRONTEND_URL (a single origin)
+  // is merged in so the deployed frontend can be allowed without editing CORS_ORIGIN.
+  corsOrigin: [
+    ...(process.env.CORS_ORIGIN || 'http://localhost:3000')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.trim()] : []),
+  ],
   uploadLimitMb: parseInt(process.env.UPLOAD_LIMIT_MB, 10) || 5,
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
